@@ -75,3 +75,58 @@ SELECT
     COUNT(product_id) OVER (PARTITION BY customer_id, product_id) AS purchase_count
 FROM 
     customer_purchases;
+
+
+
+/*# String manipulations
+1. Some product names in the product table have descriptions like "Jar" or "Organic". 
+These are separated from the product name with a hyphen. 
+Create a column using SUBSTR (and a couple of other commands) that captures these, 
+but is otherwise NULL. Remove any trailing or leading whitespaces. 
+Don't just use a case statement for each product! 
+
+| product_name               | description |
+|----------------------------|-------------|
+| Habanero Peppers - Organic | Organic     |
+
+**HINT**: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR will help split the column. 
+*/
+
+SELECT 
+    product_name,
+    TRIM(SUBSTR(product_name, INSTR(product_name, '-') + 1)) AS description
+FROM 
+    product
+WHERE 
+    INSTR(product_name, '-') > 0;
+
+/*# UNION
+1. Using a UNION, write a query that displays the market dates with the highest and lowest total sales.
+
+**HINT**: There are a possibly a few ways to do this query, but if you're struggling, try the following: 1) Create a CTE/Temp Table to find sales values grouped dates; 2) Create another CTE/Temp table with a rank windowed function on the previous query to create "best day" and "worst day"; 3) Query the second temp table twice, once for the best day, once for the worst day, with a UNION binding them. 
+*/
+WITH total_sales_by_date AS (
+    SELECT 
+        market_date,
+        SUM(quantity*cost_to_customer_per_qty) AS total_sales
+    FROM 
+        customer_purchases
+    GROUP BY 
+        market_date
+)
+SELECT 
+    market_date,
+    total_sales
+FROM 
+    total_sales_by_date
+WHERE 
+    total_sales = (SELECT MAX(total_sales) FROM total_sales_by_date)
+UNION
+SELECT 
+    market_date,
+    total_sales
+FROM 
+    total_sales_by_date
+WHERE 
+    total_sales = (SELECT MIN(total_sales) FROM total_sales_by_date);
+
