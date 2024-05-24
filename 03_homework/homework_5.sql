@@ -1,31 +1,3 @@
--- String manipulations
-/* 1. Some product names in the product table have descriptions like "Jar" or "Organic". 
-These are separated from the product name with a hyphen. 
-Create a column using SUBSTR (and a couple of other commands) that captures these, but is otherwise NULL. 
-Remove any trailing or leading whitespaces. Don't just use a case statement for each product! 
-
-| product_name               | description |
-|----------------------------|-------------|
-| Habanero Peppers - Organic | Organic     |
-
-Hint: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR will help split the column. */
-
-
-
-/* 2. Filter the query to show any product_size value that contain a number with REGEXP. */
-
-
-
--- UNION
-/* 1. Using a UNION, write a query that displays the market dates with the highest and lowest total sales.
-
-HINT: There are a possibly a few ways to do this query, but if you're struggling, try the following: 
-1) Create a CTE/Temp Table to find sales values grouped dates; 
-2) Create another CTE/Temp table with a rank windowed function on the previous query to create 
-"best day" and "worst day"; 
-3) Query the second temp table twice, once for the best day, once for the worst day, 
-with a UNION binding them. */
-
 
 
 -- Cross Join
@@ -38,7 +10,45 @@ Remember, CROSS JOIN will explode your table rows, so CROSS JOIN should likely b
 Think a bit about the row counts: how many distinct vendors, product names are there (x)?
 How many customers are there (y). 
 Before your final group by you should have the product of those two queries (x*y).  */
+WITH vendor_products AS (
+    SELECT 
+        v.vendor_name,
+        p.product_name,
+        vi.original_price
+    FROM 
+        vendor_inventory vi
+    JOIN 
+        vendor v ON vi.vendor_id = v.vendor_id
+    JOIN 
+        product p ON vi.product_id = p.product_id
+),
+customer_count AS (
+    SELECT 
+        COUNT(DISTINCT customer_id) AS total_customers
+    FROM 
+        customer
+),
+salesresult as (
+	select 
+		vp.vendor_name,
+		vp.product_name,
+		vp.original_price * 5 * cc.total_customers AS total_revenue
+	from 
+		vendor_products as vp
+	cross join 
+		customer_count cc
+)
 
+SELECT 
+    vendor_name,
+    product_name,
+    total_revenue
+FROM 
+    salesresult
+group by 
+	 vendor_name,
+    product_name,
+    total_revenue
 
 
 -- INSERT
@@ -46,19 +56,38 @@ Before your final group by you should have the product of those two queries (x*y
 This table will contain only products where the `product_qty_type = 'unit'`. 
 It should use all of the columns from the product table, as well as a new column for the `CURRENT_TIMESTAMP`.  
 Name the timestamp column `snapshot_timestamp`. */
+CREATE TABLE product_units AS
+SELECT 
+    product_id,
+    product_name,
+    product_size,
+    product_qty_type,
+    product_category_id
+FROM 
+    product
+WHERE 
+    product_qty_type = 'unit';
 
+ALTER TABLE product_units
+ADD COLUMN snapshot_timestamp TIMESTAMP;
+
+UPDATE product_units
+SET snapshot_timestamp = CURRENT_TIMESTAMP;
 
 
 /*2. Using `INSERT`, add a new row to the product_units table (with an updated timestamp). 
 This can be any product you desire (e.g. add another record for Apple Pie). */
 
-
+INSERT INTO product_units (product_id, product_name, product_size, product_qty_type, product_category_id, snapshot_timestamp)
+VALUES (101, 'Apple Pie', 'Large', 'unit', '12324231', CURRENT_TIMESTAMP);
 
 -- DELETE
 /* 1. Delete the older record for the whatever product you added. 
 
 HINT: If you don't specify a WHERE clause, you are going to have a bad time.*/
-
+DELETE FROM product_units
+WHERE product_name = 'Apple Pie'
+AND product_category_id='12324231'
 
 
 -- UPDATE
@@ -78,4 +107,29 @@ Finally, make sure you have a WHERE statement to update the right row,
 	you'll need to use product_units.product_id to refer to the correct row within the product_units table. 
 When you have all of these components, you can run the update statement. */
 
+WITH last_quantity_per_product AS (
+    SELECT 
+        vi.product_id,
+        COALESCE(vi.quantity, 0) AS last_quantity
+    FROM 
+        vendor_inventory vi
+    WHERE 
+        vi.market_date = (
+            SELECT MAX(market_date)
+            FROM vendor_inventory
+            WHERE product_id = vi.product_id
+        )
+)
+
+-- Step 2: Update the current_quantity in product_units
+UPDATE product_units
+SET current_quantity = (
+    SELECT last_quantity
+    FROM last_quantity_per_product
+    WHERE last_quantity_per_product.product_id = product_units.product_id
+)
+WHERE product_id IN (
+    SELECT product_id
+    FROM last_quantity_per_product
+);
 
