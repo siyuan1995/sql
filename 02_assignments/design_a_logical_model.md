@@ -5,8 +5,14 @@ Create a logical model for a small bookstore. 📚
 
 At the minimum it should have employee, order, sales, customer, and book entities (tables). Determine sensible column and table design based on what you know about these concepts. Keep it simple, but work out sensible relationships to keep tables reasonably sized. Include a date table. There are several tools online you can use, I'd recommend [_Draw.io_](https://www.drawio.com/) or [_LucidChart_](https://www.lucidchart.com/pages/).
 
+Please see attached q1
+![q1.png](./images/q1.png)
+
 ## Question 2
 We want to create employee shifts, splitting up the day into morning and evening. Add this to the ERD.
+
+Please see attached q2
+![q2.png](./images/q2.png)
 
 ## Question 3
 The store wants to keep customer addresses. Propose two architectures for the CUSTOMER_ADDRESS table, one that will retain changes, and another that will overwrite. Which is type 1, which is type 2?
@@ -14,17 +20,15 @@ The store wants to keep customer addresses. Propose two architectures for the CU
 _Hint, search type 1 vs type 2 slowly changing dimensions._
 
 Bonus: Are there privacy implications to this, why or why not?
-```
-Your answer...
-```
+
+To manage customer addresses in a database, we can use two types of architectures: one that retains changes (Type 2 Slowly Changing Dimension) and another that overwrites changes (Type 1 Slowly Changing Dimension). Let's explore each type and the implications for customer privacy
+ In type 1,the customer address is updated directly in the CUSTOMER table, overwriting the previous address. There is no history of the previous addresses; only the current address is stored. While in type 2, each change in the customer's address is stored as a new row in the CUSTOMER_ADDRESS table. This table includes start and end dates to track the validity period of each address.
 
 ## Question 4
 Review the AdventureWorks Schema [here](https://i.stack.imgur.com/LMu4W.gif)
 
 Highlight at least two differences between it and your ERD. Would you change anything in yours?
-```
-Your answer...
-```
+The difference is mainly on how detailed they design the database, each table is designed to the smallest entity, you can hardly break it into two tables. And the adventurework ERD has schemas that categorize all tables into different sessions, and each session seems has a central table, this is more structured comparing to put everything all together. 
 
 # Criteria
 
